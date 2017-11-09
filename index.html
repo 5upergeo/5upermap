@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>5upermap</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css?family=Play" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.4/lodash.min.js"></script>
+    <style type="text/css">
+    html,
+    body {
+        margin: 0px;
+        padding: 0px;
+        height: 100%;
+        font-family: 'Play', sans-serif;
+    }
+
+    body {
+        display: flex;
+    }
+
+    #control,
+    #map,
+    #attribute {
+        box-sizing: border-box;
+        border: 1px solid #000;
+        margin: 2px;
+        border-radius: 2px;
+    }
+
+    #map {
+        flex: 1;
+        background-color: #eee;
+        z-index: 1;
+        position: relative;
+    }
+
+    #control {
+        width: 280px;
+    }
+
+    #attribute {
+        width: 280px;
+    }
+
+    #control,
+    #attribute {
+        padding: 6px;
+        background-color: #efefef;
+        z-index: 10;
+        overflow: auto;
+    }
+
+    #temp-control {
+        position: fixed;
+        z-index: 100;
+    }
+
+    #mymap {
+        width: 100%;
+        height: 100%;
+    }
+
+    #mymap-controls {
+        width: 100%;
+        height: 100%;
+        top: 0px;
+        position: absolute;
+        pointer-events: none;
+        z-index: 2000;
+        overflow: hidden;
+    }
+
+    #mymap-controls .map-control {
+        pointer-events: auto;
+    }
+
+    .control-title {
+        background-color: #fff;
+        padding: 4px 8px;
+        border-radius: 2px;
+    }
+
+    .control-content {
+        overflow: hidden;
+    }
+
+    .map-control {
+        float: left;
+        clear: both;
+        margin: 8px;
+        box-sizing: border-box;
+    }
+
+    .map-control button:first-child {
+        margin-bottom: 2px;
+    }
+
+    .map-button {
+        background-color: #fff;
+        border: 1px solid #000;
+        box-sizing: border-box;
+        border-radius: 2px;
+        outline: none;
+        cursor: pointer;
+        float: left;
+        clear: both;
+        font-family: 'Play', sans-serif;
+    }
+
+    .map-zoom-button button {
+        width: 36px;
+        height: 36px;
+    }
+
+    .map-base-control button {
+        padding: 8px;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    #map-base-control-add button {
+        color: #38C172;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="control">
+        <div class="control">
+            <div class="control-title">Map Controls</div>
+            <div class="control-content">
+                <div class="map-control map-zoom-button">
+                    <button class="map-button" aria-label="Zoom in">
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                    </button>
+                    <button class="map-button" aria-label="Zoom out">
+                        <i class="fa fa-minus" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="control">
+            <div class="control-title">Base Map Controls</div>
+            <div class="control-content">
+                <div id="map-base-control-openstreetmap" class="map-control map-base-control">
+                    <button class="map-button">
+                        OpenStreetMap
+                    </button>
+                </div>
+                <div id="map-base-control-googlemap" class="map-control map-base-control">
+                    <button class="map-button">
+                        GoogleMap
+                    </button>
+                </div>
+                <div id="map-base-control-googlesatellite" class="map-control map-base-control">
+                    <button class="map-button">
+                        GoogleSatellite
+                    </button>
+                </div>
+                <div id="map-base-control-googleterrain" class="map-control map-base-control">
+                    <button class="map-button">
+                        GoogleTerrain
+                    </button>
+                </div>
+                <div id="map-base-control-taiwanemap" class="map-control map-base-control">
+                    <button class="map-button">
+                        TaiwanEmap
+                    </button>
+                </div>
+                <div id="map-base-control-add" class="map-control map-base-control">
+                    <button class="map-button">
+                        Add
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="control-title">OverLayer Controls</div>
+        <div class="control-content">
+            <div id="map-base-control-openstreetmap" class="map-control map-base-control">
+                <button class="map-button">
+                    Taiwan County
+                </button>
+            </div>
+            <div id="map-base-control-add" class="map-control map-base-control">
+                <button class="map-button">
+                    Add
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="map">
+        <div id="mymap"></div>
+        <div id="mymap-controls"></div>
+    </div>
+    <div id="attribute">
+        <div id="a-map-zoom-button"></div>
+        <div id="a-map-zoom-button"></div>
+        <div id="a-map-zoom-button"></div>
+        <div id="a-map-zoom-button"></div>
+    </div>
+    <script type="text/javascript">
+    var mymap = L.map('mymap', {
+        zoomControl: false
+    }).setView([23.8, 121], 8);
+
+    L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+    }).addTo(mymap);
+
+    var mapContainer = document.getElementById('map');
+    var mapContainerBounds;
+
+    function windowResize() {
+        mapContainerBounds = {
+            top: mapContainer.offsetTop,
+            left: mapContainer.offsetLeft,
+            bottom: mapContainer.offsetTop + mapContainer.clientHeight,
+            right: mapContainer.offsetLeft + mapContainer.clientWidth
+        };
+    }
+    windowResize();
+
+    _.forEach(document.querySelectorAll('#control .map-control'), (control) => {
+        control.addEventListener('click', (e) => {
+            let tempControl = document.createElement('div');
+            tempControl.id = 'temp-control';
+            tempControl.className = control.className;
+            tempControl.innerHTML = control.innerHTML;
+            tempControl.style.left = e.clientX - 16 + 'px';
+            tempControl.style.top = e.clientY - 16 + 'px';
+            tempControl.style.opacity = 0.5;
+            tempControl.onclick = putOnMapContainer;
+            document.body.appendChild(tempControl);
+
+            targetControl = tempControl;
+        });
+
+        control.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+    });
+
+    var targetControl;
+    document.addEventListener('mousemove', (e) => {
+        if (!!targetControl) {
+            targetControl.style.left = e.clientX - 16 + 'px';
+            targetControl.style.top = e.clientY - 16 + 'px';
+
+            if (e.clientX > mapContainerBounds.left && e.clientX < mapContainerBounds.right && e.clientY > mapContainerBounds.top && e.clientY < mapContainerBounds.bottom) {
+                targetControl.style.opacity = 1;
+            } else {
+                targetControl.style.opacity = 0.5;
+            }
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code == 'Escape' && targetControl) {
+            document.body.removeChild(targetControl);
+        }
+    });
+
+    var mapControlContainer = document.getElementById('mymap-controls');
+
+    function putOnMapContainer(e) {
+        let left = e.clientX - mapContainerBounds.left;
+        let right = -(e.clientX - mapContainerBounds.right);
+        let top = e.clientY - mapContainerBounds.top;
+        let bottom = -(e.clientY - mapContainerBounds.bottom);
+
+        if (left > 0 && right > 0 && top > 0 && bottom > 0) {
+            mapControlContainer.appendChild(targetControl);
+
+            if (left > right) {
+            	targetControl.style.left = "";
+            	targetControl.style.right = (right - targetControl.clientWidth + 1) + 'px';
+            } else {
+                targetControl.style.left = (left - 17) + 'px';
+            }
+
+            if (top > bottom) {
+            	targetControl.style.top = "";
+            	targetControl.style.bottom = (bottom - targetControl.clientHeight + 1) + 'px';
+            } else {
+                targetControl.style.top = (top - 17) + 'px';
+            }
+            targetControl.style.position = 'absolute';
+            targetControl.id = "";
+            targetControl.onclick = null;
+            targetControl = null;
+        }
+    }
+    </script>
+</body>
+
+</html>
