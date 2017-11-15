@@ -234,7 +234,6 @@
             tempControl.style.left = e.clientX - 16 + 'px';
             tempControl.style.top = e.clientY - 16 + 'px';
             tempControl.style.opacity = 0.5;
-            tempControl.onclick = putOnMapContainer;
             document.body.appendChild(tempControl);
 
             targetControl = tempControl;
@@ -254,6 +253,18 @@
 
             if (e.clientX > mapContainerBounds.left && e.clientX < mapContainerBounds.right && e.clientY > mapContainerBounds.top && e.clientY < mapContainerBounds.bottom) {
                 targetControl.style.opacity = 1;
+
+                if (e.clientX - mapContainerBounds.left < 17) {
+                    targetControl.style.left = mapContainerBounds.left + 1 + 'px';
+                } else if (mapContainerBounds.right - e.clientX - targetControl.clientWidth < 1) {
+                    targetControl.style.left = (mapContainerBounds.right - targetControl.clientWidth - 15) + 'px';
+                }
+
+                if (e.clientY - mapContainerBounds.top < 17) {
+                    targetControl.style.top = mapContainerBounds.top + 1 + 'px';
+                } else if (mapContainerBounds.bottom - e.clientY - targetControl.clientHeight < 1) {
+                    targetControl.style.top = (mapContainerBounds.bottom - targetControl.clientHeight - 15) + 'px';
+                }
             } else {
                 targetControl.style.opacity = 0.5;
             }
@@ -267,35 +278,36 @@
     });
 
     var mapControlContainer = document.getElementById('mymap-controls');
+    document.body.addEventListener('click', (e) => {
+        if (targetControl) {
+            let left = targetControl.offsetLeft - mapContainerBounds.left;
+            let right = -(targetControl.offsetLeft - mapContainerBounds.right);
+            let top = targetControl.offsetTop - mapContainerBounds.top;
+            let bottom = -(targetControl.offsetTop - mapContainerBounds.bottom);
 
-    function putOnMapContainer(e) {
-        let left = e.clientX - mapContainerBounds.left;
-        let right = -(e.clientX - mapContainerBounds.right);
-        let top = e.clientY - mapContainerBounds.top;
-        let bottom = -(e.clientY - mapContainerBounds.bottom);
+            if (left > 0 && right > 0 && top > 0 && bottom > 0) {
+                mapControlContainer.appendChild(targetControl);
 
-        if (left > 0 && right > 0 && top > 0 && bottom > 0) {
-            mapControlContainer.appendChild(targetControl);
+                if (left > right) {
+                    targetControl.style.left = "";
+                    targetControl.style.right = (right - targetControl.clientWidth - 7) + 'px';
+                } else {
+                    targetControl.style.left = (left - 9) + 'px'; //9 = margin + border
+                }
 
-            if (left > right) {
-            	targetControl.style.left = "";
-            	targetControl.style.right = (right - targetControl.clientWidth + 1) + 'px';
-            } else {
-                targetControl.style.left = (left - 17) + 'px';
+                if (top > bottom) {
+                    targetControl.style.top = "";
+                    targetControl.style.bottom = (bottom - targetControl.clientHeight - 7) + 'px';
+                } else {
+                    targetControl.style.top = (top - 9) + 'px';
+                }
+                targetControl.style.position = 'absolute';
+                targetControl.id = "";
+                targetControl.onclick = null;
+                targetControl = null;
             }
-
-            if (top > bottom) {
-            	targetControl.style.top = "";
-            	targetControl.style.bottom = (bottom - targetControl.clientHeight + 1) + 'px';
-            } else {
-                targetControl.style.top = (top - 17) + 'px';
-            }
-            targetControl.style.position = 'absolute';
-            targetControl.id = "";
-            targetControl.onclick = null;
-            targetControl = null;
         }
-    }
+    });
     </script>
 </body>
 
